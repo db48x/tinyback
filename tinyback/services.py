@@ -807,6 +807,56 @@ class Arsehat(YourlsService):
     def yourls_url_convert(self):
         return 36
 
+class Pixorial(SimpleService):
+    """ """
+
+    @property
+    def charset(self):
+        return "0123456789abcdefghijklmnopqrstuvwxyz"
+
+    @property
+    def url(self):
+        return "http://myhub.pixorial.com/s/"
+
+    @property
+    def rate_limit(self):
+        """
+        Returns a tuple specifiyng the rate-limit, or None.
+
+        Returns a two-element tuple, with the first element being the number of
+        requests that are allowed in the timespan denoted by the second element
+        (in seconds). When there is no rate-limit, simply returns None.
+        """
+        return (20, 1)
+
+    @property
+    def http_keepalive(self):
+        """
+        Whether to use HTTP persistent connections or not. If set to false, the
+        connection will be forcibly closed after each request
+        """
+        return False
+
+    def fetch(self, code):
+        resp = self._http_head(code)
+
+        if resp.status in self.http_status_redirect:
+            location = resp.getheader("Location")
+            if location == "http://myhub.pixorial.com/":
+                raise exceptions.NoRedirectException("Redirected to home page")
+            if not location:
+                raise exceptions.ServiceException("No Location header after HTTP status 301")
+            return location
+        elif resp.status in self.http_status_no_redirect:
+            raise exceptions.NoRedirectException()
+        elif resp.status in self.http_status_code_blocked:
+            raise exceptions.CodeBlockedException()
+        elif resp.status in self.http_status_blocked:
+            raise exceptions.BlockedException()
+        else:
+            return self.unexpected_http_status(code, resp)
+
+
 
 _factory_map = {
     "bitly": Bitly,
@@ -822,7 +872,8 @@ _factory_map = {
     "visiblihex": VisibliHex,
     "visibli": Visibli,
     "vbly": Vbly,
-    "arsehat": Arsehat
+    "arsehat": Arsehat,
+    "pixorial": Pixorial,
 }
 
 
