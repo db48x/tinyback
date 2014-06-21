@@ -24,7 +24,7 @@ import tinyback
 import tinyback.tracker
 
 username = tmp_dir = None
-tracker = "http://urlteam.terrywri.st/"
+tracker = "http://argonath.db48x.net/"
 
 for i, value in enumerate(sys.argv):
     if i == 1:
