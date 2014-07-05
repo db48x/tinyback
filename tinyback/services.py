@@ -24,6 +24,7 @@ import re
 import socket
 import urllib
 import urlparse
+import socket
 
 import tinyback
 from tinyback import exceptions
@@ -104,11 +105,25 @@ class HTTPService(Service):
         else:
             raise ValueError("Unknown scheme %s" % parsed_url.scheme)
 
+        pos = parsed_url.netloc.find(':');
+        if pos != -1:
+            self._hostname = parsed_url.netloc[0:pos]
+            self._port = parsed_url.netloc[pos+1:]
+        else:
+            self._hostname = parsed_url.netloc
+            self._port = None
+        addr = [addrinfo for addrinfo in socket.getaddrinfo(self._hostname, self._port or 80)
+                if (addrinfo[0] == socket.AF_INET or addrinfo[0] == socket.AF_INET6) and
+                   isinstance(addrinfo[4][0], basestring)]
+        if not len(addr):
+            raise ValueError("Unknown host %s" % parsed_url.netloc)
+        self._host = addr[0][4][0]
+
         version = platform.python_version_tuple()
         if int(version[0]) == 2 and int(version[1]) <= 5:
-            self._conn = klass(parsed_url.netloc)
+            self._conn = klass(self._host)
         else:
-            self._conn = klass(parsed_url.netloc, timeout=30)
+            self._conn = klass(self._host, timeout=30)
 
     def _http_head(self, code):
         return self._http_fetch(code, "HEAD")[0]
@@ -122,6 +137,7 @@ class HTTPService(Service):
             headers["Connection"] = "Keep-Alive"
         else:
             headers["Connection"] = "close"
+        headers["Host"] = self._hostname
 
         try:
             self._conn.request(method, self._path + code, headers=headers)
