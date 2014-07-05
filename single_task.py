@@ -25,6 +25,7 @@ import tinyback.tracker
 
 username = tmp_dir = None
 tracker = "http://argonath.db48x.net/"
+max_submission_retries = 6
 
 for i, value in enumerate(sys.argv):
     if i == 1:
@@ -78,5 +79,16 @@ if not task:
 
 reaper = tinyback.Reaper(task, progress=True)
 fileobj = reaper.run(tmp_dir)
-tracker.put(task, fileobj, username)
+
+tries = 0
+while tries < max_submission_retries:
+    try:
+        tracker.put(task, fileobj, username)
+    except Exception, e:
+        wait = 2 ** (tries+1)
+        logger.warn(e)
+        if tries < max_submission_retries:
+            logger.warn("Sleeping for %d seconds..." % wait)
+            time.sleep(wait)
+    tries += 1
 fileobj.close()
