@@ -84,6 +84,7 @@ tries = 0
 while tries < max_submission_retries:
     try:
         tracker.put(task, fileobj, username)
+        break
     except Exception, e:
         wait = 2 ** (tries+1)
         logger.warn(e)
