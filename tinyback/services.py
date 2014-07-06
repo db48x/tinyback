@@ -872,6 +872,53 @@ class Pixorial(SimpleService):
         else:
             return self.unexpected_http_status(code, resp)
 
+class Twitter(SimpleService):
+    """ Twitter changes all urls in their short messages to use this shortener. """
+    @property
+    def charset(self):
+        return "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    @property
+    def url(self):
+        return "http://t.co/"
+    @property
+    def rate_limit(self):
+        return (20, 1)
+    @property
+    def http_keepalive(self):
+        return False
+
+class Trim(SimpleService):
+    """ Twitter changes all urls in their short messages to use this shortener. """
+    @property
+    def charset(self):
+        return "0123456789abcdefghijklmnopqrstuvwxyz"
+    @property
+    def url(self):
+        return "http://tr.im/"
+    @property
+    def rate_limit(self):
+        return (20, 1)
+    @property
+    def http_keepalive(self):
+        return True
+    def fetch(self, code):
+        resp = self._http_head(code)
+
+        if resp.status in self.http_status_redirect:
+            location = resp.getheader("Location")
+            if code != "404" and location == "http://tr.im/404":
+                raise exceptions.NoRedirectException("Redirected to 404 page")
+            if not location:
+                raise exceptions.ServiceException("No Location header after HTTP status 301")
+            return location
+        elif resp.status in self.http_status_no_redirect:
+            raise exceptions.NoRedirectException()
+        elif resp.status in self.http_status_code_blocked:
+            raise exceptions.CodeBlockedException()
+        elif resp.status in self.http_status_blocked:
+            raise exceptions.BlockedException()
+        else:
+            return self.unexpected_http_status(code, resp)
 
 
 _factory_map = {
@@ -890,6 +937,8 @@ _factory_map = {
     "vbly": Vbly,
     "arsehat": Arsehat,
     "pixorial": Pixorial,
+    "twitter": Twitter,
+    "trim": Trim,
 }
 
 

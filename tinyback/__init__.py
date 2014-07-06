@@ -25,7 +25,7 @@ import time
 
 from tinyback import exceptions, generators, services
 
-__version__ = "2.12"
+__version__ = "2.13"
 
 class ServiceTester:
 
